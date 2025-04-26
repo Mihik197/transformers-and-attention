@@ -8,9 +8,9 @@ from config import get_weights_file_path, get_config
 
 from datasets import load_dataset
 from tokenizers import Tokenizer
-from tokenizers.models import WordLevel
-from tokenizers.trainers import WordLevelTrainer
-from tokenizers.pre_tokenizers import Whitespace  # rule for splitting text based on spaces, tabs, etc
+from tokenizers.models import BPE
+from tokenizers.trainers import BpeTrainer
+from tokenizers.pre_tokenizers import ByteLevel
 from tqdm import tqdm
 from pathlib import Path
 
@@ -91,9 +91,9 @@ def get_all_sentences(ds, lang):
 def get_or_build_tokenizer(config, ds, lang):
     tokenizer_path = Path(config['tokenizer_file'].format(lang))  # becomes "tokenizer_en.json" if lang is 'en'
     if not Path.exists(tokenizer_path):
-        tokenizer = Tokenizer(WordLevel(unk_token='[UNK]'))
-        tokenizer.pre_tokenizer = Whitespace()  # split text on whitespace initially
-        trainer = WordLevelTrainer(special_tokens=["[UNK]", "[PAD]", "[SOS]", "[EOS]"], min_frequency=2)  # only include words that appear at least twice
+        tokenizer = Tokenizer(BPE(unk_token='[UNK]'))
+        tokenizer.pre_tokenizer = ByteLevel(add_prefix_space=True)  # split text on whitespace initially
+        trainer = BpeTrainer(vocab_size=config["tokenizer_vocab_size"], special_tokens=["[UNK]", "[PAD]", "[SOS]", "[EOS]"], min_frequency=2)  # only include words that appear at least twice
         tokenizer.train_from_iterator(get_all_sentences(ds, lang), trainer=trainer)  # training tokenizer
         tokenizer.save(str(tokenizer_path))
     else:
